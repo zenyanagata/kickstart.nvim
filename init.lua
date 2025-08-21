@@ -192,6 +192,16 @@ require('lazy').setup({
     },
   },
   {
+    'tomiis4/Hypersonic.nvim',
+    event = 'CmdlineEnter',
+    cmd = 'Hypersonic',
+    config = function()
+      require('hypersonic').setup {
+        -- config
+      }
+    end,
+  },
+  {
     'm4xshen/hardtime.nvim',
     lazy = false,
     dependencies = { 'MunifTanjim/nui.nvim' },
@@ -504,7 +514,7 @@ require('lazy').setup({
       -- Mason must be loaded before its dependents so we need to set it up here.
       -- NOTE: `opts = {}` is the same as calling `require('mason').setup({})`
       { 'mason-org/mason.nvim', opts = {} },
-      'mason-org/mason-lspconfig.nvim',
+      { 'mason-org/mason-lspconfig.nvim' },
       'WhoIsSethDaniel/mason-tool-installer.nvim',
 
       -- Useful status updates for LSP.
@@ -692,10 +702,8 @@ require('lazy').setup({
       --  - settings (table): Override the default settings passed when initializing the server.
       --        For example, to see the options for `lua_ls`, you could go to: https://luals.github.io/wiki/settings/
       local servers = {
-        -- TODO: this doesn't change the default cmd, needs further investigation
-        -- Instead, fixing the original ~/.local/share/nvim/lazy/nvim-lspconfig/lsp/clangd.lua
         clangd = {
-          cmd = { 'cclangd', 'tools-tup-builder-1.0.0-container' },
+          cmd = { 'cclangd', 'tools-tup-builder-v1-container' },
           root_dir = function()
             return '/builder_work'
           end,
@@ -728,26 +736,20 @@ require('lazy').setup({
         },
       }
 
+      -- got from https://github.com/nvim-lua/kickstart.nvim/pull/1663
+      -- The following loop will configure each server with the capabilities we defined above.
+      -- This will ensure that all servers have the same base configuration, but also
+      -- allow for server-specific overrides.
+      for server_name, server_config in pairs(servers) do
+        server_config.capabilities = vim.tbl_deep_extend('force', {}, capabilities, server_config.capabilities or {})
+        require('lspconfig')[server_name].setup(server_config)
+      end
+
       local ensure_installed = vim.tbl_keys(servers or {})
       vim.list_extend(ensure_installed, {
         'stylua', -- Used to format Lua code
       })
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
-
-      require('mason-lspconfig').setup {
-        ensure_installed = {}, -- explicitly set to an empty table (Kickstart populates installs via mason-tool-installer)
-        automatic_installation = false,
-        handlers = {
-          function(server_name)
-            local server = servers[server_name] or {}
-            -- This handles overriding only values explicitly passed
-            -- by the server configuration above. Useful when disabling
-            -- certain features of an LSP (for example, turning off formatting for ts_ls)
-            server.capabilities = vim.tbl_deep_extend('force', {}, capabilities, server.capabilities or {})
-            require('lspconfig')[server_name].setup(server)
-          end,
-        },
-      }
     end,
   },
 
@@ -994,6 +996,19 @@ require('lazy').setup({
     --    - Incremental selection: Included, see `:help nvim-treesitter-incremental-selection-mod`
     --    - Show your current context: https://github.com/nvim-treesitter/nvim-treesitter-context
     --    - Treesitter + textobjects: https://github.com/nvim-treesitter/nvim-treesitter-textobjects
+  },
+  { -- lets you navigate your code with search labels, enhanced character motions, and Treesitter integration.
+    'folke/flash.nvim',
+    event = 'VeryLazy',
+    opts = {},
+    -- stylua: ignore
+    keys = {
+      { "s", mode = { "n", "x", "o" }, function() require("flash").jump() end, desc = "Flash" },
+      { "S", mode = { "n", "x", "o" }, function() require("flash").treesitter() end, desc = "Flash Treesitter" },
+      { "r", mode = "o", function() require("flash").remote() end, desc = "Remote Flash" },
+      { "R", mode = { "o", "x" }, function() require("flash").treesitter_search() end, desc = "Treesitter Search" },
+      { "<c-s>", mode = { "c" }, function() require("flash").toggle() end, desc = "Toggle Flash Search" },
+    },
   },
 
   -- The following two comments only work if you have downloaded the kickstart repo, not just copy pasted the
