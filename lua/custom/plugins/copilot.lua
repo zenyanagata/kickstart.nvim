@@ -53,7 +53,7 @@ return {
             answer_header = "## Copilot ",
             error_header = "## Error ",
             prompts = prompts,
-            -- model = "claude-3.7-sonnet",
+            model = "gpt-5",
             mappings = {
                 -- Use tab for completion
                 complete = {
@@ -90,15 +90,14 @@ return {
             local chat = require("CopilotChat")
             chat.setup(opts)
 
-            local select = require("CopilotChat.select")
             vim.api.nvim_create_user_command("CopilotChatVisual", function(args)
-                chat.ask(args.args, { selection = select.visual })
+                chat.ask(args.args, { sticky = "#buffer" })
             end, { nargs = "*", range = true })
 
             -- Inline chat with Copilot
             vim.api.nvim_create_user_command("CopilotChatInline", function(args)
                 chat.ask(args.args, {
-                    selection = select.visual,
+                    sticky = { "#buffer" },
                     window = {
                         layout = "float",
                         relative = "cursor",
@@ -109,9 +108,18 @@ return {
                 })
             end, { nargs = "*", range = true })
 
+            vim.keymap.set('n', '<leader>ccq', function()
+            local input = vim.fn.input("Quick Chat: ")
+                if input ~= "" then
+                    chat.ask(input, {
+                        sticky = {"#buffer", "#gitdiff:unstaged", "@copilot"}
+                    })
+                end
+            end, { desc = "CopilotChat - Quick chat" })
+
             -- Restore CopilotChatBuffer
             vim.api.nvim_create_user_command("CopilotChatBuffer", function(args)
-                chat.ask(args.args, { selection = select.buffer })
+                chat.ask(args.args, { sticky = { "#buffer" } })
             end, { nargs = "*", range = true })
 
             -- Custom buffer for CopilotChat
