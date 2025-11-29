@@ -1,4 +1,3 @@
-
 -- Set up global options, then load the remap file
 vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
@@ -742,7 +741,7 @@ require('lazy').setup({
       -- allow for server-specific overrides.
       for server_name, server_config in pairs(servers) do
         server_config.capabilities = vim.tbl_deep_extend('force', {}, capabilities, server_config.capabilities or {})
-        require('lspconfig')[server_name].setup(server_config)
+        vim.lsp.config(server_name, server_config)
       end
 
       local ensure_installed = vim.tbl_keys(servers or {})
